@@ -1,0 +1,25 @@
+name: kl-hybrid-gcr
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - pip
+  - pip:
+      # Hardware-agnostic PyTorch wheels (supports CUDA on Linux/Windows & MPS on Apple Silicon)
+      - torch>=2.2.0
+      - transformers>=4.40.0
+      - accelerate>=0.29.0
+      - datasets>=2.19.0
+      - sentence-transformers>=2.7.0
+      - networkx>=3.2.0
+      - pyvis>=0.3.2
+      - SPARQLWrapper>=2.0.0
+      - numpy>=1.26.0
+      - pybind11>=2.12.0
+      - pcst_fast>=1.0.10
+      - openai>=1.30.0
+      - pyyaml>=6.0.1
+      - tqdm>=4.66.0
+      - pytest>=8.0.0
+      - python-dotenv>=1.0.1

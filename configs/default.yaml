@@ -1,0 +1,61 @@
+# Default Configuration for Hybrid PCST + Graph-Constrained Reasoning (GCR) KGQA
+project:
+  name: "kl-hybrid-gcr"
+  seed: 42
+  output_dir: "outputs"
+
+hardware:
+  # "auto" selects CUDA -> MPS -> CPU automatically via src.utils.device.get_device()
+  preferred_device: "auto"
+
+acquisition:
+  # Options: "webqsp" (rmanluo/RoG-webqsp), "cwq" (rmanluo/RoG-cwq), "wikidata", "mock"
+  source: "webqsp"
+  dataset_split: "test"
+  max_hops: 2
+  sparql:
+    endpoint_url: "https://query.wikidata.org/sparql"
+    user_agent: "KL-Hybrid-GCR-Research/0.1 (University of Coimbra; KGQA Project)"
+    timeout_sec: 30
+    max_triples_per_hop: 50
+  visualization:
+    height: "750px"
+    width: "100%"
+
+retrieval:
+  embedder_model: "sentence-transformers/all-MiniLM-L6-v2"
+  batch_size: 64
+  pcst:
+    topk_nodes: 10
+    topk_edges: 10
+    base_edge_cost: 0.5
+    anchor_prize: 4.0
+    num_clusters: 1
+    pruning: "gw"
+
+decoding:
+  path_generator:
+    model_name: "meta-llama/Meta-Llama-3-8B-Instruct"
+    max_path_hops: 2
+    max_paths_in_trie: 512
+    num_beams: 3
+    max_new_tokens: 64
+  final_reasoner:
+    model_name: "gpt-4o-mini"
+    temperature: 0.0
+    max_tokens: 128
+
+baselines:
+  llm_only:
+    model_name: "meta-llama/Meta-Llama-3-8B-Instruct"
+    mode: "cot"  # "zero_shot" | "cot"
+  standard_rag:
+    top_k: 10
+
+evaluation:
+  metrics:
+    - "hit_at_1"
+    - "f1"
+    - "faithful_reasoning_ratio"
+    - "answer_path_recall"
+    - "latency_ms"

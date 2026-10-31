@@ -1,0 +1,23 @@
+# Core Deep Learning & NLP (CUDA / MPS / CPU compatible)
+torch>=2.2.0
+transformers>=4.40.0
+accelerate>=0.29.0
+datasets>=2.19.0
+sentence-transformers>=2.7.0
+
+# Knowledge Graph, SPARQL & Subgraph Optimization
+networkx>=3.2.0
+pyvis>=0.3.2
+SPARQLWrapper>=2.0.0
+numpy>=1.26.0
+pybind11>=2.12.0
+pcst_fast>=1.0.10
+
+# APIs, Configuration & Utilities
+openai>=1.30.0
+pyyaml>=6.0.1
+tqdm>=4.66.0
+python-dotenv>=1.0.1
+
+# Testing
+pytest>=8.0.0
