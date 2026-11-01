@@ -238,3 +238,4 @@ def enumerate_kg_paths(
             paths.append([triple])
 
     return paths
+

@@ -10,3 +10,4 @@ __all__ = [
     "WikidataSPARQLClient",
     "export_subgraph_html",
 ]
+

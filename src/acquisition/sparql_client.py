@@ -194,3 +194,4 @@ class WikidataSPARQLClient:
             a_entities=[],
             triples=collected_triples,
         )
+

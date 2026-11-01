@@ -98,3 +98,4 @@ class GraphEmbedder:
         q_emb = self.encode_question(question)  # [D]
         c_embs = self.encode_texts(candidates)  # [N, D]
         return torch.mv(c_embs, q_emb)
+

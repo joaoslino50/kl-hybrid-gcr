@@ -146,3 +146,4 @@ class BenchmarkDatasetLoader:
     def load(self, max_samples: int | None = None) -> list[SubgraphData]:
         """Materialize a list of `SubgraphData` instances."""
         return list(self.iter_subgraphs(max_samples=max_samples))
+

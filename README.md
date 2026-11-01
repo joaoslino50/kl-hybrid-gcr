@@ -143,3 +143,4 @@ python scripts/run_pipeline.py --source mock --mode standard_rag --use-mock-mode
 2. X. He et al., *G-Retriever: Retrieval-Augmented Generation for Textual Graph Understanding and Question Answering*, NeurIPS 2024.
 3. L. Chen et al., *Plan-on-Graph: Self-Correcting Adaptive Planning of Large Language Model on Knowledge Graphs*, NeurIPS 2024.
 4. L. Luo et al., *Reasoning on Graphs: Faithful and Interpretable Large Language Model Reasoning*, ICLR 2024.
+

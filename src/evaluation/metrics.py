@@ -255,3 +255,4 @@ def compute_latency_stats(outputs: Sequence[ReasoningOutput]) -> dict[str, float
         "min_ms": min(latencies),
         "max_ms": max(latencies),
     }
+

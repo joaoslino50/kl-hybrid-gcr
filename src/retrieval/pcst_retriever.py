@@ -202,3 +202,4 @@ class PCSTRetriever:
             a_entities=list(subgraph.a_entities),
             triples=pruned_triples,
         )
+

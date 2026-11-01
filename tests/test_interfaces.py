@@ -241,3 +241,4 @@ def test_end_to_end_mock_hybrid_pipeline() -> None:
     assert compute_faithful_reasoning_ratio(output.generated_paths, subgraphs[0]) == pytest.approx(
         1.0
     )
+

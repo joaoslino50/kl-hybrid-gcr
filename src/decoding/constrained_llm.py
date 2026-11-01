@@ -185,3 +185,4 @@ class ConstrainedPathGenerator:
                 generated_paths.append(parsed)
 
         return generated_paths
+

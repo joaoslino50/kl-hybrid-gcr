@@ -57,3 +57,4 @@ class StandardRAGBaseline:
             generated_paths=pseudo_paths,
             prior_latency_ms=retrieval_ms,
         )
+

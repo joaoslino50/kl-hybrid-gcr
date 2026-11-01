@@ -32,3 +32,4 @@ def get_device() -> torch.device:
         logger.info("Selected compute device: %s (CPU fallback)", device)
 
     return device
+
