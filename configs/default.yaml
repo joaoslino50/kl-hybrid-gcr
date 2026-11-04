@@ -26,8 +26,8 @@ retrieval:
   embedder_model: "sentence-transformers/all-MiniLM-L6-v2"
   batch_size: 64
   pcst:
-    topk_nodes: 10
-    topk_edges: 10
+    topk_nodes: 25
+    topk_edges: 25
     base_edge_cost: 0.5
     anchor_prize: 4.0
     num_clusters: 1
@@ -41,9 +41,9 @@ decoding:
     num_beams: 3
     max_new_tokens: 64
   final_reasoner:
-    model_name: "gpt-4o-mini"
+    model_name: "meta-llama/Meta-Llama-3-8B-Instruct"
     temperature: 0.0
-    max_tokens: 128
+    max_tokens: 64
 
 baselines:
   llm_only:

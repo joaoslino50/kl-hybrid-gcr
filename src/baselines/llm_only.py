@@ -9,6 +9,7 @@ from typing import Literal
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
+from src.decoding.constrained_llm import load_shared_hf_causal_lm
 from src.utils.device import get_device
 from src.utils.types import ReasoningOutput, SubgraphData
 
@@ -47,18 +48,9 @@ class LLMOnlyBaseline:
         self._model = None
 
     def _load_hf_model(self):
-        """Lazily load Hugging Face tokenizer and CausalLM."""
+        """Lazily load or reuse the shared Hugging Face tokenizer and CausalLM."""
         if self._tokenizer is None or self._model is None:
-            logger.info("Loading LLMOnlyBaseline '%s' on %s", self.model_name, self.device)
-            self._tokenizer = AutoTokenizer.from_pretrained(self.model_name)
-            if self._tokenizer.pad_token_id is None:
-                self._tokenizer.pad_token = self._tokenizer.eos_token
-            dtype = torch.float16 if self.device.type in {"cuda", "mps"} else torch.float32
-            self._model = AutoModelForCausalLM.from_pretrained(
-                self.model_name,
-                torch_dtype=dtype,
-            ).to(self.device)
-            self._model.eval()
+            self._tokenizer, self._model = load_shared_hf_causal_lm(self.model_name, self.device)
         return self._tokenizer, self._model
 
     def build_prompt(self, question: str) -> str:

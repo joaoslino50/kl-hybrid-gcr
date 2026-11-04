@@ -216,7 +216,7 @@ def enumerate_kg_paths(
         if len(current_path) >= max_hops:
             return
 
-        # Prioritize forward directed triples from current_entity
+        # Traverse forward directed triples from current_entity
         for triple in outgoing.get(current_entity, []):
             if triple.tail not in visited:
                 visited.add(triple.tail)
@@ -224,6 +224,17 @@ def enumerate_kg_paths(
                 _dfs(triple.tail, current_path, visited)
                 current_path.pop()
                 visited.remove(triple.tail)
+                if len(paths) >= max_paths:
+                    return
+
+        # Also traverse incoming triples (preserving original Triple for 100% KG faithfulness)
+        for triple in incoming_inverted.get(current_entity, []):
+            if triple.head not in visited:
+                visited.add(triple.head)
+                current_path.append(triple)
+                _dfs(triple.head, current_path, visited)
+                current_path.pop()
+                visited.remove(triple.head)
                 if len(paths) >= max_paths:
                     return
 

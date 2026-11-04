@@ -178,9 +178,10 @@ def main() -> int:
         use_mock=args.use_mock_models,
     )
     final_reasoner = FinalAnswerReasoner(
-        model_name=fres_cfg.get("model_name", "gpt-4o-mini"),
+        model_name=fres_cfg.get("model_name", "meta-llama/Meta-Llama-3-8B-Instruct"),
         temperature=float(fres_cfg.get("temperature", 0.0)),
-        max_tokens=int(fres_cfg.get("max_tokens", 128)),
+        max_tokens=int(fres_cfg.get("max_tokens", 64)),
+        device=device,
         use_mock=args.use_mock_models,
     )
 

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, LogitsProcessorList
@@ -19,6 +20,37 @@ from src.utils.device import get_device
 from src.utils.types import SubgraphData, Triple
 
 logger = logging.getLogger(__name__)
+
+# Shared process-wide cache so Stage 3b, Stage 3c, and Baselines share a single LLM in GPU VRAM
+_SHARED_HF_LM_CACHE: dict[tuple[str, str], tuple[Any, Any]] = {}
+
+
+def load_shared_hf_causal_lm(
+    model_name: str,
+    device: torch.device,
+) -> tuple[Any, Any]:
+    """Load or reuse a cached Hugging Face `(tokenizer, model)` pair on `device`."""
+    cache_key = (model_name, str(device))
+    if cache_key not in _SHARED_HF_LM_CACHE:
+        logger.info("Loading Hugging Face CausalLM '%s' onto %s...", model_name, device)
+        tokenizer = AutoTokenizer.from_pretrained(model_name)
+        if tokenizer.pad_token_id is None:
+            tokenizer.pad_token = tokenizer.eos_token
+
+        if device.type == "cuda" and torch.cuda.is_bf16_supported():
+            dtype = torch.bfloat16
+        elif device.type in {"cuda", "mps"}:
+            dtype = torch.float16
+        else:
+            dtype = torch.float32
+
+        model = AutoModelForCausalLM.from_pretrained(
+            model_name,
+            torch_dtype=dtype,
+        ).to(device)
+        model.eval()
+        _SHARED_HF_LM_CACHE[cache_key] = (tokenizer, model)
+    return _SHARED_HF_LM_CACHE[cache_key]
 
 
 class ConstrainedPathGenerator:
@@ -58,28 +90,18 @@ class ConstrainedPathGenerator:
         self._mock_embedder = GraphEmbedder(device=self.device, use_mock=True) if use_mock else None
 
     def _load_hf_model(self):
-        """Lazily load Hugging Face tokenizer and CausalLM onto `self.device`."""
+        """Lazily load or reuse the shared Hugging Face tokenizer and CausalLM."""
         if self._tokenizer is None or self._model is None:
-            logger.info("Loading constrained path LLM '%s' on %s", self.model_name, self.device)
-            self._tokenizer = AutoTokenizer.from_pretrained(self.model_name)
-            if self._tokenizer.pad_token_id is None:
-                self._tokenizer.pad_token = self._tokenizer.eos_token
-
-            dtype = torch.float16 if self.device.type in {"cuda", "mps"} else torch.float32
-            self._model = AutoModelForCausalLM.from_pretrained(
-                self.model_name,
-                torch_dtype=dtype,
-            ).to(self.device)
-            self._model.eval()
+            self._tokenizer, self._model = load_shared_hf_causal_lm(self.model_name, self.device)
         return self._tokenizer, self._model
 
     @staticmethod
     def _build_prompt(question: str) -> str:
-        """Format the reasoning path generation prompt prefix."""
+        """Format the reasoning path generation prompt ending with a newline for clean BPE boundaries."""
         return (
             "Generate a faithful Knowledge Graph reasoning path answering the question.\n"
             f"Question: {question}\n"
-            "Reasoning Path: "
+            "Reasoning Path:\n"
         )
 
     def _generate_mock_constrained(
@@ -163,13 +185,15 @@ class ConstrainedPathGenerator:
             eos_token_id=eos_id,
         )
 
-        num_return = min(self.num_beams, len(candidate_paths))
+        # Cap beams to the number of distinct starting tokens in the Trie to avoid -inf beam slots
+        first_step_tokens = trie.get_allowed_next_tokens([])
+        effective_beams = max(1, min(self.num_beams, len(candidate_paths), len(first_step_tokens)))
         with torch.no_grad():
             outputs = model.generate(
                 **prompt_inputs,
                 max_new_tokens=self.max_new_tokens,
-                num_beams=max(1, num_return),
-                num_return_sequences=max(1, num_return),
+                num_beams=effective_beams,
+                num_return_sequences=effective_beams,
                 do_sample=False,
                 logits_processor=LogitsProcessorList([processor]),
                 pad_token_id=tokenizer.pad_token_id,
@@ -185,4 +209,3 @@ class ConstrainedPathGenerator:
                 generated_paths.append(parsed)
 
         return generated_paths
-
