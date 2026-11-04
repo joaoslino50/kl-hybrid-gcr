@@ -58,7 +58,7 @@ class ConstrainedPathGenerator:
 
     def __init__(
         self,
-        model_name: str = "meta-llama/Meta-Llama-3-8B-Instruct",
+        model_name: str = "NousResearch/Meta-Llama-3-8B-Instruct",
         max_path_hops: int = 2,
         max_paths_in_trie: int = 512,
         num_beams: int = 3,

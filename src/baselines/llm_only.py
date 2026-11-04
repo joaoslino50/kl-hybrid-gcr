@@ -21,7 +21,7 @@ class LLMOnlyBaseline:
 
     def __init__(
         self,
-        model_name: str = "meta-llama/Meta-Llama-3-8B-Instruct",
+        model_name: str = "NousResearch/Meta-Llama-3-8B-Instruct",
         mode: Literal["zero_shot", "cot"] = "zero_shot",
         max_new_tokens: int = 128,
         device: torch.device | None = None,

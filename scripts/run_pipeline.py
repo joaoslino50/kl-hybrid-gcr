@@ -169,7 +169,7 @@ def main() -> int:
         pruning=str(pcst_cfg.get("pruning", "gw")),
     )
     path_generator = ConstrainedPathGenerator(
-        model_name=pgen_cfg.get("model_name", "meta-llama/Meta-Llama-3-8B-Instruct"),
+        model_name=pgen_cfg.get("model_name", "NousResearch/Meta-Llama-3-8B-Instruct"),
         max_path_hops=int(pgen_cfg.get("max_path_hops", 2)),
         max_paths_in_trie=int(pgen_cfg.get("max_paths_in_trie", 512)),
         num_beams=int(pgen_cfg.get("num_beams", 3)),
@@ -178,7 +178,7 @@ def main() -> int:
         use_mock=args.use_mock_models,
     )
     final_reasoner = FinalAnswerReasoner(
-        model_name=fres_cfg.get("model_name", "meta-llama/Meta-Llama-3-8B-Instruct"),
+        model_name=fres_cfg.get("model_name", "NousResearch/Meta-Llama-3-8B-Instruct"),
         temperature=float(fres_cfg.get("temperature", 0.0)),
         max_tokens=int(fres_cfg.get("max_tokens", 64)),
         device=device,
@@ -219,7 +219,7 @@ def main() -> int:
             llm_mode = "cot" if args.mode.endswith("cot") else "zero_shot"
             llm_only = LLMOnlyBaseline(
                 model_name=base_cfg.get("llm_only", {}).get(
-                    "model_name", "meta-llama/Meta-Llama-3-8B-Instruct"
+                    "model_name", "NousResearch/Meta-Llama-3-8B-Instruct"
                 ),
                 mode=llm_mode,  # type: ignore[arg-type]
                 device=device,

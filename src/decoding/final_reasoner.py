@@ -23,7 +23,7 @@ class FinalAnswerReasoner:
 
     def __init__(
         self,
-        model_name: str = "meta-llama/Meta-Llama-3-8B-Instruct",
+        model_name: str = "NousResearch/Meta-Llama-3-8B-Instruct",
         temperature: float = 0.0,
         max_tokens: int = 64,
         device: torch.device | None = None,
