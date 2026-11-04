@@ -23,7 +23,7 @@ class FinalAnswerReasoner:
 
     def __init__(
         self,
-        model_name: str = "NousResearch/Meta-Llama-3-8B-Instruct",
+        model_name: str = "meta-llama/Meta-Llama-3-8B-Instruct",
         temperature: float = 0.0,
         max_tokens: int = 64,
         device: torch.device | None = None,
@@ -142,6 +142,7 @@ class FinalAnswerReasoner:
             output_ids = model.generate(
                 **inputs,
                 max_new_tokens=self.max_tokens,
+                max_length=None,
                 do_sample=self.temperature > 0.0,
                 temperature=self.temperature if self.temperature > 0.0 else None,
                 pad_token_id=tokenizer.pad_token_id,
@@ -150,6 +151,11 @@ class FinalAnswerReasoner:
 
         decoded = tokenizer.decode(output_ids[0, prompt_len:], skip_special_tokens=True)
         return self._clean_generated_answer(decoded)
+
+    def warmup(self) -> None:
+        """Pre-load the Hugging Face CausalLM onto `self.device` before timed evaluation."""
+        if not self.use_mock and not self.is_openai_model:
+            load_shared_hf_causal_lm(self.model_name, self.device)
 
     @staticmethod
     def _mock_deduce(

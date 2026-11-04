@@ -35,19 +35,19 @@ retrieval:
 
 decoding:
   path_generator:
-    model_name: "NousResearch/Meta-Llama-3-8B-Instruct"
+    model_name: "meta-llama/Meta-Llama-3-8B-Instruct"
     max_path_hops: 2
     max_paths_in_trie: 512
     num_beams: 3
     max_new_tokens: 64
   final_reasoner:
-    model_name: "NousResearch/Meta-Llama-3-8B-Instruct"
+    model_name: "meta-llama/Meta-Llama-3-8B-Instruct"
     temperature: 0.0
     max_tokens: 64
 
 baselines:
   llm_only:
-    model_name: "NousResearch/Meta-Llama-3-8B-Instruct"
+    model_name: "meta-llama/Meta-Llama-3-8B-Instruct"
     mode: "cot"  # "zero_shot" | "cot"
   standard_rag:
     top_k: 10

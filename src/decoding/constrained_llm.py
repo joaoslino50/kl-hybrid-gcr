@@ -44,10 +44,16 @@ def load_shared_hf_causal_lm(
         else:
             dtype = torch.float32
 
-        model = AutoModelForCausalLM.from_pretrained(
-            model_name,
-            torch_dtype=dtype,
-        ).to(device)
+        try:
+            model = AutoModelForCausalLM.from_pretrained(
+                model_name,
+                dtype=dtype,
+            ).to(device)
+        except TypeError:
+            model = AutoModelForCausalLM.from_pretrained(
+                model_name,
+                torch_dtype=dtype,
+            ).to(device)
         model.eval()
         _SHARED_HF_LM_CACHE[cache_key] = (tokenizer, model)
     return _SHARED_HF_LM_CACHE[cache_key]
@@ -58,7 +64,7 @@ class ConstrainedPathGenerator:
 
     def __init__(
         self,
-        model_name: str = "NousResearch/Meta-Llama-3-8B-Instruct",
+        model_name: str = "meta-llama/Meta-Llama-3-8B-Instruct",
         max_path_hops: int = 2,
         max_paths_in_trie: int = 512,
         num_beams: int = 3,
@@ -94,6 +100,11 @@ class ConstrainedPathGenerator:
         if self._tokenizer is None or self._model is None:
             self._tokenizer, self._model = load_shared_hf_causal_lm(self.model_name, self.device)
         return self._tokenizer, self._model
+
+    def warmup(self) -> None:
+        """Pre-load the Hugging Face CausalLM onto `self.device` before starting latency timers."""
+        if not self.use_mock:
+            self._load_hf_model()
 
     @staticmethod
     def _build_prompt(question: str) -> str:
@@ -192,6 +203,7 @@ class ConstrainedPathGenerator:
             outputs = model.generate(
                 **prompt_inputs,
                 max_new_tokens=self.max_new_tokens,
+                max_length=None,
                 num_beams=effective_beams,
                 num_return_sequences=effective_beams,
                 do_sample=False,

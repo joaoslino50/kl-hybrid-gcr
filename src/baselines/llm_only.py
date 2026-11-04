@@ -21,7 +21,7 @@ class LLMOnlyBaseline:
 
     def __init__(
         self,
-        model_name: str = "NousResearch/Meta-Llama-3-8B-Instruct",
+        model_name: str = "meta-llama/Meta-Llama-3-8B-Instruct",
         mode: Literal["zero_shot", "cot"] = "zero_shot",
         max_new_tokens: int = 128,
         device: torch.device | None = None,
@@ -52,6 +52,11 @@ class LLMOnlyBaseline:
         if self._tokenizer is None or self._model is None:
             self._tokenizer, self._model = load_shared_hf_causal_lm(self.model_name, self.device)
         return self._tokenizer, self._model
+
+    def warmup(self) -> None:
+        """Pre-load the Hugging Face CausalLM onto `self.device` before timed evaluation."""
+        if not self.use_mock:
+            self._load_hf_model()
 
     def build_prompt(self, question: str) -> str:
         """Build either a zero-shot or Chain-of-Thought prompt without KG triples."""
@@ -97,6 +102,7 @@ class LLMOnlyBaseline:
                 output_ids = model.generate(
                     **inputs,
                     max_new_tokens=self.max_new_tokens,
+                    max_length=None,
                     do_sample=False,
                     pad_token_id=tokenizer.pad_token_id,
                 )

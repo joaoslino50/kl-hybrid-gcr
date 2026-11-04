@@ -53,6 +53,11 @@ class GraphEmbedder:
             self._model = SentenceTransformer(self.model_name, device=str(self.device))
         return self._model
 
+    def warmup(self) -> None:
+        """Pre-load the SentenceBERT model onto `self.device` outside timed inference loops."""
+        if not self.use_mock:
+            self._load_model()
+
     def _encode_mock(self, texts: Sequence[str]) -> torch.Tensor:
         """Produce deterministic L2-normalized hashed lexical embeddings for offline testing."""
         matrix = torch.zeros((len(texts), self.mock_dim), dtype=torch.float32)
