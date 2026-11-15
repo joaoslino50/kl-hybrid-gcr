@@ -2,17 +2,18 @@
 """Batch evaluation of the Checkpoint-1 baselines on WebQSP / CWQ.
 
 Modes:
-  llm_only_zero_shot | llm_only_cot  -> local HF model, no KG (runs on your GPU)
-  standard_rag                        -> top-k triples + GPT-4o-mini (needs OPENAI_API_KEY in .env)
+  llm_only_zero_shot | llm_only_cot  -> HF model (default Llama-3-8B), no KG (runs on GPU)
+  standard_rag                        -> top-k triples + HF model (or OpenAI via --openai-model)
 
-Models are loaded ONCE. Every question is appended to a JSONL file as soon as it is
-done, so a crash / Colab disconnect loses nothing: re-run with --resume to continue.
+Models are pre-warmed ONCE before timing. Every question is appended to a JSONL file as soon
+as it is done, so a crash / Colab disconnect loses nothing: re-run with --resume to continue.
 
 Examples (from repo root):
-  python scripts/eval_baselines.py --mode llm_only_zero_shot --model Qwen/Qwen2-1.5B-Instruct --max-samples 100
-  python scripts/eval_baselines.py --mode llm_only_cot --model Qwen/Qwen2-1.5B-Instruct --max-samples 100
+  python scripts/eval_baselines.py --mode llm_only_zero_shot --max-samples 100
+  python scripts/eval_baselines.py --mode llm_only_cot --max-samples 100
   python scripts/eval_baselines.py --mode standard_rag --max-samples 100
   python scripts/eval_baselines.py --mode standard_rag --max-samples 500 --resume
+  python scripts/eval_baselines.py --mode standard_rag --openai-model gpt-4o-mini --max-samples 100
 """
 
 from __future__ import annotations
@@ -52,15 +53,25 @@ def read_done(path: Path) -> list[dict]:
 def main() -> int:
     logging.basicConfig(level=logging.WARNING)
     p = argparse.ArgumentParser()
-    p.add_argument("--mode", required=True,
-                   choices=["llm_only_zero_shot", "llm_only_cot", "standard_rag"])
+    p.add_argument(
+        "--mode",
+        required=True,
+        choices=["llm_only_zero_shot", "llm_only_cot", "standard_rag"],
+    )
     p.add_argument("--source", choices=["webqsp", "cwq"], default="webqsp")
     p.add_argument("--split", default="test")
     p.add_argument("--max-samples", type=int, default=100)
-    p.add_argument("--model", default="Qwen/Qwen2-1.5B-Instruct",
-                   help="HF model for llm_only modes (must fit in GPU memory)")
+    p.add_argument(
+        "--model",
+        default="meta-llama/Meta-Llama-3-8B-Instruct",
+        help="HF model for llm_only and standard_rag modes (must fit in GPU memory)",
+    )
     p.add_argument("--max-new-tokens", type=int, default=128)
-    p.add_argument("--openai-model", default="gpt-4o-mini")
+    p.add_argument(
+        "--openai-model",
+        default=None,
+        help="Optional OpenAI model (e.g. gpt-4o-mini) to override --model in standard_rag",
+    )
     p.add_argument("--top-k", type=int, default=10, help="triples retrieved by standard_rag")
     p.add_argument("--out", default=None)
     p.add_argument("--resume", action="store_true")
@@ -87,18 +98,29 @@ def main() -> int:
             device=device,
             use_mock=False,
         )
+        runner.warmup()
         run = runner.answer
         model_label = args.model
     else:
-        reasoner = FinalAnswerReasoner(model_name=args.openai_model, use_mock=False)
-        if not reasoner.api_key:
-            print("ERROR: OPENAI_API_KEY not found. Create a .env file in the repo root with:\n"
-                  "  OPENAI_API_KEY=sk-...\n(never commit it)")
+        rag_model = args.openai_model or args.model
+        reasoner = FinalAnswerReasoner(
+            model_name=rag_model,
+            max_tokens=args.max_new_tokens,
+            device=device,
+            use_mock=False,
+        )
+        if reasoner.is_openai_model and not reasoner.api_key:
+            print(
+                "ERROR: OPENAI_API_KEY not found for OpenAI model. Either omit --openai-model "
+                "to run on GPU with Hugging Face, or set OPENAI_API_KEY in .env."
+            )
             return 1
         embedder = GraphEmbedder(device=device, use_mock=False)
+        embedder.warmup()
+        reasoner.warmup()
         runner = StandardRAGBaseline(embedder=embedder, reasoner=reasoner, top_k=args.top_k)
         run = runner.answer
-        model_label = f"{args.openai_model} + top-{args.top_k} triples"
+        model_label = f"{rag_model} + top-{args.top_k} triples"
 
     loader = BenchmarkDatasetLoader(dataset_name=args.source, split=args.split, streaming=True)
 
@@ -131,7 +153,9 @@ def main() -> int:
             rows.append(row)
             new += 1
             if new % 10 == 0:
-                print(f"  {len(rows)} done (hit@1 so far {statistics.fmean(r['hit1'] for r in rows):.3f})")
+                print(
+                    f"  {len(rows)} done (hit@1 so far {statistics.fmean(r['hit1'] for r in rows):.3f})"
+                )
 
     if not rows:
         print("No results.")
@@ -140,8 +164,10 @@ def main() -> int:
     n = len(rows)
     ok = [r for r in rows if not r["error"]]
     print("\n" + "=" * 60)
-    print(f"{args.mode} | {model_label} | {args.source}/{args.split} | N={n} "
-          f"({time.perf_counter() - t_start:.0f}s this run)")
+    print(
+        f"{args.mode} | {model_label} | {args.source}/{args.split} | N={n} "
+        f"({time.perf_counter() - t_start:.0f}s this run)"
+    )
     print("=" * 60)
     print(f"  Hit@1        : {statistics.fmean(r['hit1'] for r in rows):.4f}")
     print(f"  F1           : {statistics.fmean(r['f1'] for r in rows):.4f}")
