@@ -80,9 +80,11 @@ class LLMOnlyBaseline:
         lower_text = raw_text.lower()
         if marker in lower_text:
             idx = lower_text.rfind(marker) + len(marker)
-            return raw_text[idx:].strip().splitlines()[0].strip()
+            tail_lines = [line.strip() for line in raw_text[idx:].strip().splitlines() if line.strip()]
+            if tail_lines:
+                return tail_lines[0]
         lines = [line.strip() for line in raw_text.strip().splitlines() if line.strip()]
-        return lines[-1] if lines else ""
+        return lines[-1] if lines else "Unknown"
 
     def answer(self, subgraph: SubgraphData) -> ReasoningOutput:
         """Answer `subgraph.question` without inspecting `subgraph.triples`."""

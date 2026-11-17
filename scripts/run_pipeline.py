@@ -138,6 +138,7 @@ def acquire_subgraphs(
                 seed_entities=["Q45"],
                 num_hops=int(acq_cfg.get("max_hops", 2)),
                 use_mock=use_mock,
+                a_entities=["Lisbon"],
             )
         ]
 
